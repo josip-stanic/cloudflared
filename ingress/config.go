@@ -402,7 +402,7 @@ func (defaults *OriginRequestConfig) setOriginMtlsCertificateFile(overrides conf
 
 func (defaults *OriginRequestConfig) setOriginMtlsKeyFile(overrides config.OriginRequestConfig) {
 	if val := overrides.OriginMtlsKeyFile; val != nil {
-		defaults.OriginMtlsCertificateFile = *val
+		defaults.OriginMtlsKeyFile = *val
 	}
 }
 
