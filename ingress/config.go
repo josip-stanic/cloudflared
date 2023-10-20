@@ -123,6 +123,8 @@ func originRequestFromSingleRule(c *cli.Context) OriginRequestConfig {
 	var httpHostHeader string
 	var originServerName string
 	var caPool string
+	var originMtlsCertificateFile string
+	var originMtlsKeyFile string
 	var noTLSVerify bool
 	var disableChunkedEncoding bool
 	var bastionMode bool
@@ -157,6 +159,12 @@ func originRequestFromSingleRule(c *cli.Context) OriginRequestConfig {
 	if flag := tlsconfig.OriginCAPoolFlag; c.IsSet(flag) {
 		caPool = c.String(flag)
 	}
+	if flag := tlsconfig.OriginMtlsCertificateFlag; c.IsSet(flag) {
+		originMtlsCertificateFile = c.String(flag)
+	}
+	if flag := tlsconfig.OriginMtlsKeyFlag; c.IsSet(flag) {
+		originMtlsKeyFile = c.String(flag)
+	}
 	if flag := NoTLSVerifyFlag; c.IsSet(flag) {
 		noTLSVerify = c.Bool(flag)
 	}
@@ -181,22 +189,24 @@ func originRequestFromSingleRule(c *cli.Context) OriginRequestConfig {
 	}
 
 	return OriginRequestConfig{
-		ConnectTimeout:         connectTimeout,
-		TLSTimeout:             tlsTimeout,
-		TCPKeepAlive:           tcpKeepAlive,
-		NoHappyEyeballs:        noHappyEyeballs,
-		KeepAliveConnections:   keepAliveConnections,
-		KeepAliveTimeout:       keepAliveTimeout,
-		HTTPHostHeader:         httpHostHeader,
-		OriginServerName:       originServerName,
-		CAPool:                 caPool,
-		NoTLSVerify:            noTLSVerify,
-		DisableChunkedEncoding: disableChunkedEncoding,
-		BastionMode:            bastionMode,
-		ProxyAddress:           proxyAddress,
-		ProxyPort:              proxyPort,
-		ProxyType:              proxyType,
-		Http2Origin:            http2Origin,
+		ConnectTimeout:            connectTimeout,
+		TLSTimeout:                tlsTimeout,
+		TCPKeepAlive:              tcpKeepAlive,
+		NoHappyEyeballs:           noHappyEyeballs,
+		KeepAliveConnections:      keepAliveConnections,
+		KeepAliveTimeout:          keepAliveTimeout,
+		HTTPHostHeader:            httpHostHeader,
+		OriginServerName:          originServerName,
+		CAPool:                    caPool,
+		OriginMtlsCertificateFile: originMtlsCertificateFile,
+		OriginMtlsKeyFile:         originMtlsKeyFile,
+		NoTLSVerify:               noTLSVerify,
+		DisableChunkedEncoding:    disableChunkedEncoding,
+		BastionMode:               bastionMode,
+		ProxyAddress:              proxyAddress,
+		ProxyPort:                 proxyPort,
+		ProxyType:                 proxyType,
+		Http2Origin:               http2Origin,
 	}
 }
 
@@ -235,6 +245,12 @@ func originRequestFromConfig(c config.OriginRequestConfig) OriginRequestConfig {
 	}
 	if c.CAPool != nil {
 		out.CAPool = *c.CAPool
+	}
+	if c.OriginMtlsCertificateFile != nil {
+		out.OriginMtlsCertificateFile = *c.OriginMtlsCertificateFile
+	}
+	if c.OriginMtlsKeyFile != nil {
+		out.OriginMtlsKeyFile = *c.OriginMtlsKeyFile
 	}
 	if c.NoTLSVerify != nil {
 		out.NoTLSVerify = *c.NoTLSVerify
@@ -294,6 +310,12 @@ type OriginRequestConfig struct {
 	// Path to the CA for the certificate of your origin.
 	// This option should be used only if your certificate is not signed by Cloudflare.
 	CAPool string `yaml:"caPool" json:"caPool"`
+	// Path to the Certificate file for mTLS authentication of your origin.
+	// This option should be used only if your origin requires mTLS authentication.
+	OriginMtlsCertificateFile string `yaml:"originMtlsCertificateFile" json:"originMtlsCertificateFile"`
+	// Path to the Key file for mTLS authentication of your origin.
+	// This option should be used only if your origin requires mTLS authentication.
+	OriginMtlsKeyFile string `yaml:"originMtlsKeyFile" json:"originMtlsKeyFile"`
 	// Disables TLS verification of the certificate presented by your origin.
 	// Will allow any certificate from the origin to be accepted.
 	// Note: The connection from your machine to Cloudflare's Edge is still encrypted.
@@ -369,6 +391,18 @@ func (defaults *OriginRequestConfig) setOriginServerName(overrides config.Origin
 func (defaults *OriginRequestConfig) setCAPool(overrides config.OriginRequestConfig) {
 	if val := overrides.CAPool; val != nil {
 		defaults.CAPool = *val
+	}
+}
+
+func (defaults *OriginRequestConfig) setOriginMtlsCertificateFile(overrides config.OriginRequestConfig) {
+	if val := overrides.OriginMtlsCertificateFile; val != nil {
+		defaults.OriginMtlsCertificateFile = *val
+	}
+}
+
+func (defaults *OriginRequestConfig) setOriginMtlsKeyFile(overrides config.OriginRequestConfig) {
+	if val := overrides.OriginMtlsKeyFile; val != nil {
+		defaults.OriginMtlsCertificateFile = *val
 	}
 }
 
@@ -452,6 +486,8 @@ func setConfig(defaults OriginRequestConfig, overrides config.OriginRequestConfi
 	cfg.setHTTPHostHeader(overrides)
 	cfg.setOriginServerName(overrides)
 	cfg.setCAPool(overrides)
+	cfg.setOriginMtlsCertificateFile(overrides)
+	cfg.setOriginMtlsKeyFile(overrides)
 	cfg.setNoTLSVerify(overrides)
 	cfg.setDisableChunkedEncoding(overrides)
 	cfg.setBastionMode(overrides)
@@ -497,24 +533,26 @@ func ConvertToRawOriginConfig(c OriginRequestConfig) config.OriginRequestConfig 
 	}
 
 	return config.OriginRequestConfig{
-		ConnectTimeout:         connectTimeout,
-		TLSTimeout:             tlsTimeout,
-		TCPKeepAlive:           tcpKeepAlive,
-		NoHappyEyeballs:        defaultBoolToNil(c.NoHappyEyeballs),
-		KeepAliveConnections:   keepAliveConnections,
-		KeepAliveTimeout:       keepAliveTimeout,
-		HTTPHostHeader:         emptyStringToNil(c.HTTPHostHeader),
-		OriginServerName:       emptyStringToNil(c.OriginServerName),
-		CAPool:                 emptyStringToNil(c.CAPool),
-		NoTLSVerify:            defaultBoolToNil(c.NoTLSVerify),
-		DisableChunkedEncoding: defaultBoolToNil(c.DisableChunkedEncoding),
-		BastionMode:            defaultBoolToNil(c.BastionMode),
-		ProxyAddress:           proxyAddress,
-		ProxyPort:              zeroUIntToNil(c.ProxyPort),
-		ProxyType:              emptyStringToNil(c.ProxyType),
-		IPRules:                convertToRawIPRules(c.IPRules),
-		Http2Origin:            defaultBoolToNil(c.Http2Origin),
-		Access:                 access,
+		ConnectTimeout:            connectTimeout,
+		TLSTimeout:                tlsTimeout,
+		TCPKeepAlive:              tcpKeepAlive,
+		NoHappyEyeballs:           defaultBoolToNil(c.NoHappyEyeballs),
+		KeepAliveConnections:      keepAliveConnections,
+		KeepAliveTimeout:          keepAliveTimeout,
+		HTTPHostHeader:            emptyStringToNil(c.HTTPHostHeader),
+		OriginServerName:          emptyStringToNil(c.OriginServerName),
+		CAPool:                    emptyStringToNil(c.CAPool),
+		OriginMtlsCertificateFile: emptyStringToNil(c.OriginMtlsCertificateFile),
+		OriginMtlsKeyFile:         emptyStringToNil(c.OriginMtlsKeyFile),
+		NoTLSVerify:               defaultBoolToNil(c.NoTLSVerify),
+		DisableChunkedEncoding:    defaultBoolToNil(c.DisableChunkedEncoding),
+		BastionMode:               defaultBoolToNil(c.BastionMode),
+		ProxyAddress:              proxyAddress,
+		ProxyPort:                 zeroUIntToNil(c.ProxyPort),
+		ProxyType:                 emptyStringToNil(c.ProxyType),
+		IPRules:                   convertToRawIPRules(c.IPRules),
+		Http2Origin:               defaultBoolToNil(c.Http2Origin),
+		Access:                    access,
 	}
 }
 

@@ -15,8 +15,10 @@ import (
 )
 
 const (
-	OriginCAPoolFlag = "origin-ca-pool"
-	CaCertFlag       = "cacert"
+	OriginCAPoolFlag          = "origin-ca-pool"
+	OriginMtlsCertificateFlag = "origin-mtls-cert"
+	OriginMtlsKeyFlag         = "origin-mtls-key"
+	CaCertFlag                = "cacert"
 )
 
 // CertReloader can load and reload a TLS certificate from a particular filepath.

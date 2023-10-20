@@ -208,6 +208,12 @@ type OriginRequestConfig struct {
 	// Path to the CA for the certificate of your origin.
 	// This option should be used only if your certificate is not signed by Cloudflare.
 	CAPool *string `yaml:"caPool" json:"caPool,omitempty"`
+	// Path to the Certificate file for mTLS authentication of your origin.
+	// This option should be used only if your origin requires mTLS authentication.
+	OriginMtlsCertificateFile *string `yaml:"originMtlsCertificateFile" json:"originMtlsCertificateFile,omitempty"`
+	// Path to the Key file for mTLS authentication of your origin.
+	// This option should be used only if your origin requires mTLS authentication.
+	OriginMtlsKeyFile *string `yaml:"originMtlsKeyFile" json:"originMtlsKeyFile,omitempty"`
 	// Disables TLS verification of the certificate presented by your origin.
 	// Will allow any certificate from the origin to be accepted.
 	// Note: The connection from your machine to Cloudflare's Edge is still encrypted.

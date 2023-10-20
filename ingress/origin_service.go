@@ -357,6 +357,13 @@ func newHTTPTransport(service OriginService, cfg OriginRequestConfig, log *zerol
 	if _, isHelloWorld := service.(*helloWorld); !isHelloWorld && cfg.OriginServerName != "" {
 		httpTransport.TLSClientConfig.ServerName = cfg.OriginServerName
 	}
+	if cfg.OriginMtlsCertificateFile != "" && cfg.OriginMtlsKeyFile != "" {
+		cr, err := tlsconfig.NewCertReloader(cfg.OriginMtlsCertificateFile, cfg.OriginMtlsKeyFile)
+		if err != nil {
+			return nil, errors.Wrap(err, "Error loading mTLS cert")
+		}
+		httpTransport.TLSClientConfig.GetCertificate = cr.Cert
+	}
 
 	dialer := &net.Dialer{
 		Timeout:   cfg.ConnectTimeout.Duration,

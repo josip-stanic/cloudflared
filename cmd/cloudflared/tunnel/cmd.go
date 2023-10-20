@@ -928,6 +928,18 @@ func configureProxyFlags(shouldHide bool) []cli.Flag {
 			EnvVars: []string{"TUNNEL_ORIGIN_CA_POOL"},
 			Hidden:  shouldHide,
 		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:    tlsconfig.OriginMtlsCertificateFlag,
+			Usage:   legacyTunnelFlag("Path to the Certificate file for mTLS authentication of your origin. This option should be used only if your origin requires mTLS authentication."),
+			EnvVars: []string{"TUNNEL_ORIGIN_MTLS_CERTIFICATE"},
+			Hidden:  shouldHide,
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:    tlsconfig.OriginMtlsKeyFlag,
+			Usage:   legacyTunnelFlag("Path to the Key file for mTLS authentication of your origin. This option should be used only if your origin requires mTLS authentication."),
+			EnvVars: []string{"TUNNEL_ORIGIN_MTLS_KEY"},
+			Hidden:  shouldHide,
+		}),
 		altsrc.NewBoolFlag(&cli.BoolFlag{
 			Name:    ingress.NoTLSVerifyFlag,
 			Usage:   legacyTunnelFlag("Disables TLS verification of the certificate presented by your origin. Will allow any certificate from the origin to be accepted. Note: The connection from your machine to Cloudflare's Edge is still encrypted."),
